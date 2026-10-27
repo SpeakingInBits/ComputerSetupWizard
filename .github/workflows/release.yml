@@ -1,0 +1,65 @@
+name: Release
+
+on:
+  # Actions > Release > Run workflow: builds main and publishes a release with both exes
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version, such as v1.2.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+# One release at a time, so two runs can't race for the same version
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the version and branch
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "::error::Releases are made from main, not $GITHUB_REF_NAME."
+            exit 1
+          fi
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::The version must look like v1.2.0, not '$VERSION'."
+            exit 1
+          fi
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$VERSION" > /dev/null 2>&1; then
+            echo "::error::$VERSION already exists. Pick a new version."
+            exit 1
+          fi
+
+  build:
+    needs: check
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ inputs.version }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: Create release
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        # Creates the tag on the commit that was built
+        run: >-
+          gh release create "$VERSION" ComputerSetupWizard-*.exe
+          --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
