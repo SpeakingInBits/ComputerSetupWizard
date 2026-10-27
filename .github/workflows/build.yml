@@ -1,0 +1,55 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        rid: [win-x64, win-arm64]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Test
+        if: matrix.rid == 'win-x64'
+        run: dotnet test tests/ComputerSetupWizard.Core.Tests
+
+      - name: Publish single-file exe
+        run: >-
+          dotnet publish src/ComputerSetupWizard -c Release -r ${{ matrix.rid }}
+          -p:PublishSingleFile=true -p:DebugType=none -o out
+
+      - name: Name exe for its architecture
+        run: Move-Item out/ComputerSetupWizard.exe ComputerSetupWizard-${{ matrix.rid }}.exe
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ComputerSetupWizard-${{ matrix.rid }}
+          path: ComputerSetupWizard-${{ matrix.rid }}.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+
+      - name: Create release
+        run: gh release create "$GITHUB_REF_NAME" ComputerSetupWizard-*.exe --repo "$GITHUB_REPOSITORY" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}

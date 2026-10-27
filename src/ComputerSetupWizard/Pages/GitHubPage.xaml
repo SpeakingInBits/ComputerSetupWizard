@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="ComputerSetupWizard.Pages.GitHubPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="900" Padding="32,24" Spacing="12">
+            <TextBlock Style="{StaticResource PageTitleStyle}" Text="Sign in to GitHub" />
+            <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                Sign in with your own GitHub account. Git then uses the GitHub CLI for github.com, so repos
+                outside SpeakingInBits push as you.
+            </TextBlock>
+
+            <InfoBar x:Name="LoginBar" IsClosable="False" IsOpen="True" Title="Checking…" />
+
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button
+                    x:Name="SignInButton"
+                    Click="SignIn_Click"
+                    Content="Sign in…"
+                    Style="{StaticResource AccentButtonStyle}" />
+                <Button
+                    x:Name="RefreshButton"
+                    Click="Refresh_Click"
+                    Content="Check again" />
+            </StackPanel>
+            <TextBlock
+                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                Style="{StaticResource CaptionTextBlockStyle}"
+                TextWrapping="Wrap">
+                Sign in opens a terminal window and your browser. Follow the prompts there, then close the
+                terminal to come back here.
+            </TextBlock>
+
+            <TextBlock Style="{StaticResource SectionTitleStyle}" Text="Your Git identity" />
+            <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                Used for commits in every repo that isn't set up for the bot. The suggested email is your
+                GitHub noreply address, which keeps your real email out of commits.
+            </TextBlock>
+            <TextBox x:Name="NameBox" Header="Name" />
+            <TextBox x:Name="EmailBox" Header="Email" PlaceholderText="you@example.com" />
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button
+                    x:Name="SaveButton"
+                    Click="Save_Click"
+                    Content="Save" />
+                <TextBlock x:Name="IdentityStatus" VerticalAlignment="Center" />
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

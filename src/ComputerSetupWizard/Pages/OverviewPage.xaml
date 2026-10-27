@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Page
+    x:Class="ComputerSetupWizard.Pages.OverviewPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:ComputerSetupWizard.Pages">
+
+    <ScrollViewer>
+        <StackPanel MaxWidth="900" Padding="32,24" HorizontalAlignment="Stretch" Spacing="12">
+            <TextBlock Style="{StaticResource PageTitleStyle}" Text="Set up this PC" />
+            <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                This wizard installs the dev tools, signs you in to GitHub, and sets up the SpeakingInBits-Bot,
+                so commits and pull requests in SpeakingInBits repos come from the bot while every other repo
+                keeps your own identity. Each step can be run again at any time.
+            </TextBlock>
+
+            <Grid ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Style="{StaticResource SectionTitleStyle}" Text="Status" />
+                <Button
+                    x:Name="RefreshButton"
+                    Grid.Column="1"
+                    VerticalAlignment="Bottom"
+                    Click="Refresh_Click"
+                    Content="Check again" />
+            </Grid>
+
+            <ListView
+                IsItemClickEnabled="True"
+                ItemClick="Check_ItemClick"
+                ItemsSource="{x:Bind Checks}"
+                SelectionMode="None">
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:CheckItem">
+                        <Grid Padding="0,10" ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="20" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <ProgressRing
+                                Width="16"
+                                Height="16"
+                                IsActive="{x:Bind IsChecking, Mode=OneWay}" />
+                            <FontIcon
+                                FontSize="16"
+                                Foreground="{x:Bind Brush, Mode=OneWay}"
+                                Glyph="{x:Bind Glyph, Mode=OneWay}" />
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Title}" />
+                                <TextBlock
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                    Style="{StaticResource CaptionTextBlockStyle}"
+                                    Text="{x:Bind Detail, Mode=OneWay}"
+                                    TextWrapping="Wrap" />
+                            </StackPanel>
+                            <FontIcon
+                                Grid.Column="2"
+                                FontSize="12"
+                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                Glyph="&#xE76C;" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
