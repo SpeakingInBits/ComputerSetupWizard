@@ -9,10 +9,10 @@ namespace ComputerSetupWizard.Pages;
 
 public sealed class PackageItem(WingetPackage package) : Observable
 {
-    bool _isSelected = package.Required;
+    bool _isSelected = package.SelectedByDefault;
     bool? _installed;
     bool _isBusy = true;
-    string _statusText = "Checking…";
+    string _statusText = "Checkingâ€¦";
 
     public WingetPackage Package { get; } = package;
 
@@ -69,12 +69,12 @@ public sealed partial class ToolsPage : Page
         {
             item.IsBusy = true;
             item.Installed = null;
-            item.StatusText = "Checking…";
+            item.StatusText = "Checkingâ€¦";
         }
 
         await Task.WhenAll(Packages.Select(async item =>
         {
-            item.Installed = available && await WingetService.IsInstalledAsync(item.Package.Id);
+            item.Installed = available && await WingetService.IsInstalledAsync(item.Package);
             item.StatusText = item.Installed == true ? "Installed" : "Not installed";
             item.IsBusy = false;
         }));
@@ -95,13 +95,13 @@ public sealed partial class ToolsPage : Page
         foreach (var item in selected)
         {
             item.IsBusy = true;
-            item.StatusText = "Installing…";
+            item.StatusText = "Installingâ€¦";
             Log.Append($"> winget install {item.Package.Id}");
 
-            var result = await WingetService.InstallAsync(item.Package.Id, Log.Append);
+            var result = await WingetService.InstallAsync(item.Package, Log.Append);
 
             item.IsBusy = false;
-            item.Installed = result.Succeeded || await WingetService.IsInstalledAsync(item.Package.Id);
+            item.Installed = result.Succeeded || await WingetService.IsInstalledAsync(item.Package);
             item.StatusText = item.Installed == true ? "Installed" : $"Failed (exit code {result.ExitCode})";
             Log.Append("");
         }

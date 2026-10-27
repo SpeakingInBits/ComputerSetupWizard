@@ -51,12 +51,13 @@ public sealed partial class OverviewPage : Page
     readonly CheckItem _identity = new("Your Git identity", "GitHub");
     readonly CheckItem _key = new("Bot private key", "BotKey");
     readonly CheckItem _repos = new("SpeakingInBits repos use the bot", "Repos");
+    readonly CheckItem _mods = new("Claude Code mods", "Claude");
     readonly CheckItem _claude = new("Claude Code knows about the bot", "Claude");
 
     public OverviewPage()
     {
         InitializeComponent();
-        Checks = [_winget, _git, _gh, _login, _identity, _key, _repos, _claude];
+        Checks = [_winget, _git, _gh, _login, _identity, _key, _repos, _mods, _claude];
     }
 
     public ObservableCollection<CheckItem> Checks { get; }
@@ -104,6 +105,10 @@ public sealed partial class OverviewPage : Page
             {
                 _repos.Report(Status.Error, "Needs Git");
             }
+
+            var mods = await ClaudeModsService.GetModsAsync();
+            var enabled = mods.Count(m => ClaudeModsService.IsEnabled(m.Name));
+            _mods.Report(enabled == mods.Count ? Status.Ok : Status.Error, $"{enabled} of {mods.Count} enabled");
 
             var claude = ClaudeMdService.GetState(AppInstall.TargetExe);
             _claude.Report(claude == ClaudeMdState.Current ? Status.Ok : Status.Error, claude switch

@@ -90,6 +90,15 @@ public static class ProcessRunner
         return process.ExitCode;
     }
 
+    /// <summary>Runs a program that needs administrator rights, which shows the UAC prompt, and waits for it.</summary>
+    public static async Task<int> RunElevatedAsync(string fileName, string arguments)
+    {
+        var startInfo = new ProcessStartInfo(fileName, arguments) { UseShellExecute = true, Verb = "runas" };
+        using var process = Process.Start(startInfo)!;
+        await process.WaitForExitAsync();
+        return process.ExitCode;
+    }
+
     static void ApplyEnvironment(ProcessStartInfo startInfo, IReadOnlyDictionary<string, string?>? environment)
     {
         if (environment is null)
