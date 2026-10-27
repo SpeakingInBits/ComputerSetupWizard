@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ComputerSetupWizard.Core/ComputerSetupWizard.Core.csproj" />
+    <Project Path="src/ComputerSetupWizard/ComputerSetupWizard.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ComputerSetupWizard.Core.Tests/ComputerSetupWizard.Core.Tests.csproj" />
+  </Folder>
+</Solution>

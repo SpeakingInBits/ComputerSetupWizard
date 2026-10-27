@@ -11,6 +11,24 @@ Commits and pull requests that Claude makes in SpeakingInBits repos use the **Sp
 | Commit name | `speakinginbits-bot[bot]` |
 | Commit email | `347181781+speakinginbits-bot[bot]@users.noreply.github.com` |
 
+## The easy way: run ComputerSetupWizard
+
+[ComputerSetupWizard](../README.md) does all of the steps below except generating the key on GitHub, which it opens for you. It also does more than the manual steps:
+
+- It creates bot tokens itself, so it doesn't need `Get-BotToken.ps1` or OpenSSL.
+- In each SpeakingInBits clone it sets up, it puts itself in place of gh as the github.com credential helper, in that repo's local config only:
+
+  ```ini
+  [credential "https://github.com"]
+      helper =
+      helper = !'C:\\Users\\you\\AppData\\Local\\Programs\\ComputerSetupWizard\\ComputerSetupWizard.exe' git-credential
+  ```
+
+  The empty `helper =` clears the global gh helper for that repo, so `git push` there always gets a fresh bot token, with no `GH_TOKEN` to refresh every hour. Other repos still use gh and your own account.
+- `gh` doesn't use git's credential helpers, so pull requests still need `$env:GH_TOKEN = & <wizard exe> token`. The CLAUDE.md section the wizard writes tells Claude to do this.
+
+The rest of this guide is the manual way to set up the bot.
+
 ## 1. Install Git and the GitHub CLI
 
 ```powershell
