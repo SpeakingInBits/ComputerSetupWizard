@@ -44,4 +44,11 @@ dotnet run --project src/ComputerSetupWizard
 dotnet publish src/ComputerSetupWizard -c Release -r win-x64 -p:PublishSingleFile=true -p:DebugType=none -o artifacts/win-x64
 ```
 
-Pushing a `v*` tag builds both exes and publishes them as a GitHub release.
+## Release
+
+1. On GitHub, open **Actions** > **Build** > **Run workflow**.
+2. Keep the branch on `main`, enter a new version such as `v1.2.0`, and click **Run workflow**.
+
+The workflow tests and builds both exes, stamped with that version. Then it creates the tag and a release with generated notes, with `ComputerSetupWizard-win-x64.exe` and `ComputerSetupWizard-win-arm64.exe` attached. It stops before building if the version isn't in `v1.2.0` form, is already used, or the branch isn't `main`.
+
+Don't create releases or `v*` tags by hand: they won't get the exes.
