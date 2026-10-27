@@ -20,6 +20,9 @@
     <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
     <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
 
+    <!-- Unpackaged apps load resources.pri or <exe name>.pri, so a fixed name keeps the UI loading when CI renames the exe -->
+    <ProjectPriFileName>resources.pri</ProjectPriFileName>
+
     <!-- Program.Main handles the command line before starting the UI -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
