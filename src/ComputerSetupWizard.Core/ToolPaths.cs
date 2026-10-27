@@ -8,6 +8,7 @@ public static class ToolPaths
         ["git"] = [@"%ProgramFiles%\Git\cmd\git.exe"],
         ["gh"] = [@"%ProgramFiles%\GitHub CLI\gh.exe"],
         ["winget"] = [@"%LOCALAPPDATA%\Microsoft\WindowsApps\winget.exe"],
+        ["claude"] = [@"%USERPROFILE%\.local\bin\claude.exe", @"%LOCALAPPDATA%\Microsoft\WinGet\Links\claude.exe"],
     };
 
     /// <summary>Reloads PATH from the registry, so tools that winget just installed are found.</summary>
