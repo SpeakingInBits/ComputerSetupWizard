@@ -4,9 +4,18 @@ on:
   # Actions > Release > Run workflow: builds main and publishes a release with both exes
   workflow_dispatch:
     inputs:
-      version:
-        description: Release version, such as v1.2.0
+      changes:
+        description: What changed since the last release (picks the next version)
         required: true
+        type: choice
+        default: Bug fixes (patch, v1.2.3 → v1.2.4)
+        options:
+          - Bug fixes (patch, v1.2.3 → v1.2.4)
+          - New features (minor, v1.2.3 → v1.3.0)
+          - Breaking changes (major, v1.2.3 → v2.0.0)
+      version:
+        description: Exact version, such as v1.2.0 (optional; overrides the choice above)
+        required: false
         type: string
 
 permissions:
@@ -20,9 +29,13 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
-      - name: Check the version and branch
+      - name: Pick and check the version
+        id: version
         env:
+          CHANGES: ${{ inputs.changes }}
           VERSION: ${{ inputs.version }}
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -30,6 +43,22 @@ jobs:
             echo "::error::Releases are made from main, not $GITHUB_REF_NAME."
             exit 1
           fi
+
+          # Highest vX.Y.Z tag, or v0.0.0 before the first release
+          latest=$(gh api --paginate "repos/$GITHUB_REPOSITORY/tags" --jq '.[].name' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          latest=${latest:-v0.0.0}
+
+          VERSION=$(echo "$VERSION" | xargs)
+          if [[ -z "$VERSION" ]]; then
+            IFS=. read -r major minor patch <<< "${latest#v}"
+            case "$CHANGES" in
+              *major*) VERSION="v$((major + 1)).0.0" ;;
+              *minor*) VERSION="v$major.$((minor + 1)).0" ;;
+              *)       VERSION="v$major.$minor.$((patch + 1))" ;;
+            esac
+          fi
+
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::The version must look like v1.2.0, not '$VERSION'."
             exit 1
@@ -38,15 +67,21 @@ jobs:
             echo "::error::$VERSION already exists. Pick a new version."
             exit 1
           fi
+          if [[ "$(printf '%s\n' "$latest" "$VERSION" | sort -V | tail -n 1)" != "$VERSION" ]]; then
+            echo "::warning::$VERSION is lower than the latest release, $latest."
+          fi
+
+          echo "::notice::Releasing $VERSION (latest was $latest)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   build:
     needs: check
     uses: ./.github/workflows/build.yml
     with:
-      version: ${{ inputs.version }}
+      version: ${{ needs.check.outputs.version }}
 
   release:
-    needs: build
+    needs: [check, build]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -57,7 +92,7 @@ jobs:
 
       - name: Create release
         env:
-          VERSION: ${{ inputs.version }}
+          VERSION: ${{ needs.check.outputs.version }}
           GH_TOKEN: ${{ github.token }}
         # Creates the tag on the commit that was built
         run: >-
