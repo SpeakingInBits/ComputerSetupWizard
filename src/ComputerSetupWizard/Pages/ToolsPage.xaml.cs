@@ -12,7 +12,7 @@ public sealed class PackageItem(WingetPackage package) : Observable
     bool _isSelected = package.SelectedByDefault;
     bool? _installed;
     bool _isBusy = true;
-    string _statusText = "Checkingâ€¦";
+    string _statusText = "Checking…";
 
     public WingetPackage Package { get; } = package;
 
@@ -69,7 +69,7 @@ public sealed partial class ToolsPage : Page
         {
             item.IsBusy = true;
             item.Installed = null;
-            item.StatusText = "Checkingâ€¦";
+            item.StatusText = "Checking…";
         }
 
         await Task.WhenAll(Packages.Select(async item =>
@@ -95,7 +95,7 @@ public sealed partial class ToolsPage : Page
         foreach (var item in selected)
         {
             item.IsBusy = true;
-            item.StatusText = "Installingâ€¦";
+            item.StatusText = "Installing…";
             Log.Append($"> winget install {item.Package.Id}");
 
             var result = await WingetService.InstallAsync(item.Package, Log.Append);
