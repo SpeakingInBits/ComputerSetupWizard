@@ -29,7 +29,19 @@ public sealed partial class MainWindow : Window
         AppWindow.Resize(new SizeInt32((int)(1100 * scale), (int)(780 * scale)));
 
         Nav.SelectedItem = Nav.MenuItems[0];
+        _ = CheckForUpdateAsync();
     }
+
+    /// <summary>Downloads a newer version in the background, if there is one, and offers to restart into it.</summary>
+    async Task CheckForUpdateAsync()
+    {
+        if (await Task.Run(AppUpdater.DownloadUpdateAsync) is not { } version)
+            return;
+        UpdateBar.Message = $"Version {version} is ready. It installs the next time you open the wizard, or restart now.";
+        UpdateBar.IsOpen = true;
+    }
+
+    void RestartToUpdate_Click(object sender, RoutedEventArgs e) => AppUpdater.RestartToUpdate();
 
     IList<NavigationViewItem> Steps => Nav.MenuItems.Cast<NavigationViewItem>().ToList();
 

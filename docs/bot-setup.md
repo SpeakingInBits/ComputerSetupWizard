@@ -21,7 +21,7 @@ Commits and pull requests that Claude makes in SpeakingInBits repos use the **Sp
   ```ini
   [credential "https://github.com"]
       helper =
-      helper = !'C:\\Users\\you\\AppData\\Local\\Programs\\ComputerSetupWizard\\ComputerSetupWizard.exe' git-credential
+      helper = !'C:\\Users\\you\\AppData\\Local\\ComputerSetupWizard\\current\\ComputerSetupWizard.exe' git-credential
   ```
 
   The empty `helper =` clears the global gh helper for that repo, so `git push` there always gets a fresh bot token, with no `GH_TOKEN` to refresh every hour. Other repos still use gh and your own account.

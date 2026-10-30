@@ -50,7 +50,10 @@ public sealed partial class ReposPage : Page
         InitializeComponent();
         FoldersBox.Text = string.Join(Environment.NewLine, RepoService.DefaultScanRoots());
         InstallNote.Text =
-            $"Git runs the wizard to get bot tokens, so it copies itself to {AppInstall.InstallDirectory} first. " +
+            (AppUpdater.IsInstalled
+                ? $"Git runs the wizard from {AppInstall.Directory} to get bot tokens. It stays there when the wizard updates. "
+                : $"This copy of the wizard isn't installed, so git runs it from {AppInstall.Directory}, and pushes fail if it moves. " +
+                  "Install it with the Setup.exe from the latest release instead. ") +
             "For a new clone, search again or run: ComputerSetupWizard.exe configure-repo <path>";
     }
 
@@ -74,7 +77,7 @@ public sealed partial class ReposPage : Page
         SetBusy(true);
         try
         {
-            var found = await RepoService.ScanAsync(Folders, AppInstall.TargetExe);
+            var found = await RepoService.ScanAsync(Folders, AppInstall.Exe);
             Repos.Clear();
             foreach (var repo in found)
                 Repos.Add(new RepoItem(repo));
@@ -111,8 +114,7 @@ public sealed partial class ReposPage : Page
         }
         await UpdateSelectedAsync("now use the bot", async repo =>
         {
-            var exe = AppInstall.EnsureInstalled();
-            await RepoService.ConfigureForBotAsync(repo.Path, exe);
+            await RepoService.ConfigureForBotAsync(repo.Path, AppInstall.Exe);
             return RepoState.Bot;
         });
     }

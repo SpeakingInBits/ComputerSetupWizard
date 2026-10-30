@@ -31,19 +31,30 @@ jobs:
         if: matrix.rid == 'win-x64'
         run: dotnet test tests/ComputerSetupWizard.Core.Tests
 
-      - name: Publish single-file exe
+      # Velopack's packaging tool. Keep its version the same as the Velopack package in ComputerSetupWizard.csproj.
+      - name: Install vpk
+        run: dotnet tool install --global vpk --version 1.2.161
+
+      - name: Publish and package
         env:
           VERSION: ${{ inputs.version }}
         run: |
-          # Stamp release builds with their version, which shows in the exe's properties
-          $version = if ($env:VERSION) { $env:VERSION.TrimStart('v') } else { '0.0.0' }
+          # Stamp release builds with their version, which shows in the exe's properties and is the Velopack version.
+          # Other builds get a prerelease version, since vpk needs one above 0.0.0.
+          $version = if ($env:VERSION) { $env:VERSION.TrimStart('v') } else { '0.0.1-dev' }
           dotnet publish src/ComputerSetupWizard -c Release -r ${{ matrix.rid }} `
             -p:PublishSingleFile=true -p:DebugType=none -p:Version=$version -o out
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
-      - name: Name exe for its architecture
-        run: Move-Item out/ComputerSetupWizard.exe ComputerSetupWizard-${{ matrix.rid }}.exe
+          # Each architecture is its own channel, so an installed wizard only updates to its own package. No portable
+          # zip: git and Claude run the wizard by path, so it belongs in one place. No deltas: each update downloads
+          # the whole app, which keeps the release simple.
+          vpk pack --packId ComputerSetupWizard --packTitle "Computer Setup Wizard" --packAuthors SpeakingInBits `
+            --packVersion $version --channel ${{ matrix.rid }} --runtime ${{ matrix.rid }} --delta None --noPortable `
+            --packDir out --mainExe ComputerSetupWizard.exe --outputDir dist
 
+      # ComputerSetupWizard-<rid>-Setup.exe, plus the package and release list (releases.<rid>.json) installed copies update from
       - uses: actions/upload-artifact@v7
         with:
           name: ComputerSetupWizard-${{ matrix.rid }}
-          path: ComputerSetupWizard-${{ matrix.rid }}.exe
+          path: dist/*

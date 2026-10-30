@@ -114,7 +114,7 @@ public sealed partial class ClaudePage : Page
 
     void ShowState()
     {
-        var exe = AppInstall.TargetExe;
+        var exe = AppInstall.Exe;
         Preview.Text = ClaudeMdService.BuildSection(exe);
 
         var state = ClaudeMdService.GetState(exe);
@@ -134,8 +134,7 @@ public sealed partial class ClaudePage : Page
     {
         try
         {
-            // The instructions point Claude at the installed exe, so make sure it's there
-            ClaudeMdService.Write(AppInstall.EnsureInstalled());
+            ClaudeMdService.Write(AppInstall.Exe);
             WriteStatus.Text = "";
         }
         catch (Exception ex)

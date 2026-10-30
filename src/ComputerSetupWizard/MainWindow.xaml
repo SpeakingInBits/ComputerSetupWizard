@@ -65,14 +65,26 @@
 
             <Grid>
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
 
-                <Frame x:Name="ContentFrame" />
+                <!-- A newer version has been downloaded. It installs the next time the wizard opens, or now with Restart. -->
+                <InfoBar
+                    x:Name="UpdateBar"
+                    Margin="32,12,32,0"
+                    Severity="Success"
+                    Title="Update ready">
+                    <InfoBar.ActionButton>
+                        <Button Click="RestartToUpdate_Click" Content="Restart now" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
+
+                <Frame x:Name="ContentFrame" Grid.Row="1" />
 
                 <Grid
-                    Grid.Row="1"
+                    Grid.Row="2"
                     Padding="32,12"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="0,1,0,0">

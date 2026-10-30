@@ -93,7 +93,7 @@ static class Cli
             return 0;
         }
 
-        var exe = AppInstall.EnsureInstalled();
+        var exe = AppInstall.Exe;
         if (await RepoService.GetInfoAsync(repo, exe) is null)
         {
             Console.Error.WriteLine($"{repo} has no {BotConfig.Org} remote on GitHub, so it keeps your personal identity.");
