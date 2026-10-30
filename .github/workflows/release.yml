@@ -88,13 +88,21 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          path: dist
           merge-multiple: true
 
       - name: Create release
         env:
           VERSION: ${{ needs.check.outputs.version }}
           GH_TOKEN: ${{ github.token }}
-        # Creates the tag on the commit that was built
-        run: >-
-          gh release create "$VERSION" ComputerSetupWizard-*.exe
-          --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes
+        run: |
+          cat > notes.md <<'EOF'
+          Download `ComputerSetupWizard-win-x64-Setup.exe` (or `-win-arm64-Setup.exe` for an Arm PC) and run it. It installs for your Windows account and keeps itself up to date.
+
+          The other files (`.nupkg`, `.json`, `RELEASES`) are what installed copies download to update. You don't need them.
+          EOF
+          # Creates the tag on the commit that was built. The install note comes first, then GitHub's list of changes.
+          # Installed copies update from the newest release's files (releases/latest/download), so this must be marked
+          # latest, which gh does for the highest version.
+          gh release create "$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$VERSION" \
+            --notes-file notes.md --generate-notes

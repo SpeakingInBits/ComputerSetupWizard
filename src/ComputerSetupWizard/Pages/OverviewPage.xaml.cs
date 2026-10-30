@@ -95,7 +95,7 @@ public sealed partial class OverviewPage : Page
 
             if (GitHubCliService.IsGitInstalled)
             {
-                var repos = await RepoService.ScanAsync(RepoService.DefaultScanRoots(), AppInstall.TargetExe);
+                var repos = await RepoService.ScanAsync(RepoService.DefaultScanRoots(), AppInstall.Exe);
                 var ready = repos.Count(r => r.State == RepoState.Bot);
                 _repos.Report(
                     repos.Count == 0 ? Status.Warning : ready == repos.Count ? Status.Ok : Status.Error,
@@ -110,7 +110,7 @@ public sealed partial class OverviewPage : Page
             var enabled = mods.Count(m => ClaudeModsService.IsEnabled(m.Name));
             _mods.Report(enabled == mods.Count ? Status.Ok : Status.Error, $"{enabled} of {mods.Count} enabled");
 
-            var claude = ClaudeMdService.GetState(AppInstall.TargetExe);
+            var claude = ClaudeMdService.GetState(AppInstall.Exe);
             _claude.Report(claude == ClaudeMdState.Current ? Status.Ok : Status.Error, claude switch
             {
                 ClaudeMdState.Current => ClaudeMdService.FilePath,

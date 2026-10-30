@@ -4,7 +4,7 @@ namespace ComputerSetupWizard.Core.Tests;
 
 public class RepoServiceTests
 {
-    const string Exe = @"C:\Users\me\AppData\Local\Programs\ComputerSetupWizard\ComputerSetupWizard.exe";
+    const string Exe = @"C:\Users\me\AppData\Local\ComputerSetupWizard\current\ComputerSetupWizard.exe";
 
     [Theory]
     [InlineData("https://github.com/SpeakingInBits/ComputerSetupWizard", true)]

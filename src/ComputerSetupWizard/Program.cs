@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Velopack;
 
 namespace ComputerSetupWizard;
 
@@ -15,6 +16,11 @@ public static partial class Program
     [STAThread]
     static int Main(string[] args)
     {
+        // Must run first. Setup.exe and the updater start the exe with their own arguments (shortcuts, uninstalling),
+        // which Run() handles before exiting. Opening the window also installs an update downloaded last time, but a
+        // command doesn't: git and Claude read its output, and installing restarts the exe.
+        VelopackApp.Build().SetAutoApplyOnStartup(args.Length == 0).Run();
+
         if (args.Length > 0)
             return Cli.Run(args);
 
