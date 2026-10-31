@@ -33,7 +33,7 @@ public static partial class RepoService
             Path.Combine(home, "code"),
             Path.Combine(home, "Projects"),
             Path.Combine(home, "Documents", "GitHub"),
-            BotConfig.KeyDirectory,
+            BotConfig.DefaultKeyDirectory,
             @"C:\src",
         ];
         return candidates.Where(Directory.Exists).ToList();
