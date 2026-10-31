@@ -12,7 +12,8 @@
             <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
                 Installs with winget, one at a time. Git and the GitHub CLI are needed for the rest of the setup.
                 Installing accepts each package's license, and Windows may ask for administrator approval.
-                Visual Studio and SQL Server are large downloads and can take a while.
+                Visual Studio and SQL Server are large downloads and can take a while. If you installed something
+                yourself and winget doesn't list it, mark it as installed.
             </TextBlock>
 
             <InfoBar
@@ -52,7 +53,15 @@
                                     FontSize="14"
                                     Foreground="{x:Bind Brush, Mode=OneWay}"
                                     Glyph="{x:Bind Glyph, Mode=OneWay}" />
-                                <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" />
+                                <TextBlock VerticalAlignment="Center" Text="{x:Bind StatusText, Mode=OneWay}" />
+                                <HyperlinkButton
+                                    Click="Mark_Click"
+                                    Content="Mark as installed"
+                                    Visibility="{x:Bind CanMark, Mode=OneWay}" />
+                                <HyperlinkButton
+                                    Click="Unmark_Click"
+                                    Content="Unmark"
+                                    Visibility="{x:Bind CanUnmark, Mode=OneWay}" />
                             </StackPanel>
                         </Grid>
                     </DataTemplate>
