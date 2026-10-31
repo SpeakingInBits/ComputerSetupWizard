@@ -60,7 +60,7 @@
                         <FontIcon Glyph="&#xE8D7;" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem Content="Bot repos" Tag="Repos">
+                <NavigationViewItem Content="Bot identity" Tag="BotIdentity">
                     <NavigationViewItem.Icon>
                         <FontIcon Glyph="&#xE8B7;" />
                     </NavigationViewItem.Icon>

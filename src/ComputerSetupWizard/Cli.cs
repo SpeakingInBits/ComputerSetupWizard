@@ -13,9 +13,7 @@ static class Cli
         Commands:
           token                   Print a SpeakingInBits-Bot token (valid ~1 hour)
           info                    Show the app, installation and permissions, without the token
-          configure-repo [path]   Set up a SpeakingInBits clone (default: current folder) for the bot
-          reset-repo [path]       Remove the bot setup from a clone
-          git-credential get      Git credential helper; configure-repo sets this up
+          git-credential get      Git credential helper; the Bot identity step sets this up
         """;
 
     public static int Run(string[] args)
@@ -54,12 +52,6 @@ static class Cli
                     """);
                 return 0;
 
-            case "configure-repo":
-                return await ConfigureRepoAsync(RepoPath(args), bot: true);
-
-            case "reset-repo":
-                return await ConfigureRepoAsync(RepoPath(args), bot: false);
-
             case "git-credential":
                 return await GitCredentialAsync(args.ElementAtOrDefault(1));
 
@@ -72,37 +64,6 @@ static class Cli
                 Console.Error.WriteLine(Usage);
                 return 2;
         }
-    }
-
-    static string RepoPath(string[] args) => Path.GetFullPath(args.ElementAtOrDefault(1) ?? Environment.CurrentDirectory);
-
-    static async Task<int> ConfigureRepoAsync(string path, bool bot)
-    {
-        var top = await ProcessRunner.RunAsync("git", ["-C", path, "rev-parse", "--show-toplevel"]);
-        if (!top.Succeeded)
-        {
-            Console.Error.WriteLine($"{path} isn't a Git repository.");
-            return 1;
-        }
-        var repo = Path.GetFullPath(top.Output);
-
-        if (!bot)
-        {
-            await RepoService.ResetToPersonalAsync(repo);
-            Console.Out.WriteLine($"{repo} now uses your personal Git identity.");
-            return 0;
-        }
-
-        var exe = AppInstall.Exe;
-        if (await RepoService.GetInfoAsync(repo, exe) is null)
-        {
-            Console.Error.WriteLine($"{repo} has no {BotConfig.Org} remote on GitHub, so it keeps your personal identity.");
-            return 1;
-        }
-
-        await RepoService.ConfigureForBotAsync(repo, exe);
-        Console.Out.WriteLine($"{repo} now commits as {BotConfig.CommitName} and pushes with bot tokens.");
-        return 0;
     }
 
     /// <summary>

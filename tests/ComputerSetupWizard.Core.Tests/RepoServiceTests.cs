@@ -16,26 +16,25 @@ public class RepoServiceTests
     public void IsOrgRemote(string url, bool expected) => Assert.Equal(expected, RepoService.IsOrgRemote(url));
 
     [Fact]
-    public void GetState_Bot()
+    public void GetLocalSettings_FindsTheOldBotSetup()
     {
-        string[] helpers = ["", RepoService.HelperCommand(Exe)];
-        Assert.Equal(RepoState.Bot, RepoService.GetState(BotConfig.CommitName, BotConfig.CommitEmail, helpers, Exe));
+        string[] helpers = ["", BotIdentityService.HelperCommand(Exe)];
+        Assert.Equal(new(true, true, true), RepoService.GetLocalSettings(BotConfig.CommitName, BotConfig.CommitEmail, helpers));
     }
 
     [Fact]
-    public void GetState_IdentityWithoutHelperIsPartial() =>
-        Assert.Equal(RepoState.Partial, RepoService.GetState(BotConfig.CommitName, BotConfig.CommitEmail, [], Exe));
-
-    [Fact]
-    public void GetState_HelperForAMovedExeIsPartial()
+    public void GetLocalSettings_FindsAHelperForAMovedExe()
     {
-        string[] helpers = ["", RepoService.HelperCommand(@"C:\Downloads\ComputerSetupWizard.exe")];
-        Assert.Equal(RepoState.Partial, RepoService.GetState(BotConfig.CommitName, BotConfig.CommitEmail, helpers, Exe));
+        string[] helpers = ["", BotIdentityService.HelperCommand(@"C:\Downloads\ComputerSetupWizard.exe")];
+        Assert.True(RepoService.GetLocalSettings(null, null, helpers).Helper);
     }
 
     [Fact]
-    public void GetState_NothingSetIsPersonal() =>
-        Assert.Equal(RepoState.Personal, RepoService.GetState(null, null, [], Exe));
+    public void GetLocalSettings_LeavesOtherSettingsAlone()
+    {
+        string[] helpers = ["", "!'C:\\Program Files\\GitHub CLI\\gh.exe' auth git-credential"];
+        Assert.False(RepoService.GetLocalSettings("Someone", "someone@example.com", helpers).Any);
+    }
 
     [Fact]
     public void FindRepositories_StopsAtRepos()

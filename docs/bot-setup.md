@@ -16,15 +16,27 @@ Commits and pull requests that Claude makes in SpeakingInBits repos use the **Sp
 [ComputerSetupWizard](../README.md) does all of the steps below except generating the key on GitHub, which it opens for you. It also does more than the manual steps:
 
 - It creates bot tokens itself, so it doesn't need `Get-BotToken.ps1` or OpenSSL.
-- In each SpeakingInBits clone it sets up, it puts itself in place of gh as the github.com credential helper, in that repo's local config only:
+- It puts itself in place of gh as the github.com credential helper for SpeakingInBits repos. The bot's settings go in `~/.gitconfig-speakinginbits`:
 
   ```ini
+  [user]
+      name = speakinginbits-bot[bot]
+      email = 347181781+speakinginbits-bot[bot]@users.noreply.github.com
   [credential "https://github.com"]
       helper =
       helper = !'C:\\Users\\you\\AppData\\Local\\ComputerSetupWizard\\current\\ComputerSetupWizard.exe' git-credential
   ```
 
-  The empty `helper =` clears the global gh helper for that repo, so `git push` there always gets a fresh bot token, with no `GH_TOKEN` to refresh every hour. Other repos still use gh and your own account.
+  `~/.gitconfig` includes that file only for repos with a SpeakingInBits remote (Git 2.36 or later), with one entry for each URL form GitHub uses (`https://`, `https://user@`, `git@` and `ssh://`). The org name is matched in any case, because the match is case-sensitive otherwise:
+
+  ```ini
+  [includeIf "hasconfig:remote.*.url:https://github.com/[Ss][Pp][Ee][Aa][Kk][Ii][Nn][Gg][Ii][Nn][Bb][Ii][Tt][Ss]/**"]
+      path = C:/Users/you/.gitconfig-speakinginbits
+  ```
+
+  So every SpeakingInBits clone, including ones you make later, uses the bot with nothing to set up per repo. The empty `helper =` clears gh's helper for those repos, so `git push` there always gets a fresh bot token, with no `GH_TOKEN` to refresh every hour. Other repos still use gh and your own account.
+
+  Git keeps the last value it reads, so the includes have to stay at the end of `~/.gitconfig`. The wizard moves them back after it signs you in or saves your identity, and the Overview flags them if something else lands after them.
 - `gh` doesn't use git's credential helpers, so pull requests still need `$env:GH_TOKEN = & <wizard exe> token`. The CLAUDE.md section the wizard writes tells Claude to do this.
 
 The rest of this guide is the manual way to set up the bot.
@@ -49,7 +61,7 @@ git config --global user.email "you@example.com"
 
 `gh auth setup-git` makes Git use the GitHub CLI for credentials, which lets the bot token in step 5 handle pushes.
 
-Your personal identity stays the global default. The bot identity is set per repo.
+Your personal identity stays the global default. Step 5 gives SpeakingInBits repos the bot identity.
 
 ## 3. Create a private key for this machine
 
@@ -83,15 +95,27 @@ Check the setup. This prints the app, installation, permissions and bot identity
 C:\Dev\Get-BotToken.ps1 -Info
 ```
 
-## 5. Use the bot in a repo
+## 5. Use the bot in SpeakingInBits repos
+
+Once per machine, put the bot's commit identity in its own file and include it for repos with a SpeakingInBits remote. Other repos keep your own identity. Git keeps the last value it reads, so run this after step 2, which puts the include after your own `[user]` section:
+
+```powershell
+$botConfig = "$HOME\.gitconfig-speakinginbits"
+git config --file $botConfig user.name "speakinginbits-bot[bot]"
+git config --file $botConfig user.email "347181781+speakinginbits-bot[bot]@users.noreply.github.com"
+git config --global "includeIf.hasconfig:remote.*.url:https://github.com/SpeakingInBits/**.path" $botConfig.Replace('\', '/')
+git config --global "includeIf.hasconfig:remote.*.url:git@github.com:SpeakingInBits/**.path" $botConfig.Replace('\', '/')
+```
+
+These match remotes spelled `SpeakingInBits` (the match is case-sensitive), which is what GitHub's clone URLs use. New clones get the bot identity too, with nothing to set per repo.
+
+Then, to push or open pull requests:
 
 ```powershell
 $env:GH_TOKEN = & C:\Dev\Get-BotToken.ps1
-git config user.name "speakinginbits-bot[bot]"
-git config user.email "347181781+speakinginbits-bot[bot]@users.noreply.github.com"
 ```
 
-While `GH_TOKEN` is set, `git push` and `gh pr create` act as the bot. Get a new token when it expires after an hour. Run the `git config` lines without `--global` in each repo, so other repos keep your own identity.
+While `GH_TOKEN` is set, `git push` and `gh pr create` act as the bot. Get a new token when it expires after an hour.
 
 ## 6. Tell Claude to use the bot
 
@@ -103,9 +127,7 @@ Add this to `~/.claude/CLAUDE.md` so every Claude Code session on the machine fo
 For any repo in the SpeakingInBits GitHub org, make commits and open PRs as the SpeakingInBits-Bot GitHub App, not as my personal account.
 
 - Get a token (valid ~1 hour; get a fresh one if it expires): `$env:GH_TOKEN = & C:\Dev\Get-BotToken.ps1`. `gh` and `git push` (through the `gh auth setup-git` credential helper) then act as the bot. Never print the token or read the private key.
-- Set the bot identity in each repo's local config, never globally:
-  - `git config user.name "speakinginbits-bot[bot]"`
-  - `git config user.email "347181781+speakinginbits-bot[bot]@users.noreply.github.com"`
+- The global Git config already gives every SpeakingInBits repo the bot's commit identity. Don't set `user.name` or `user.email` in those repos, or globally.
 - `C:\Dev\Get-BotToken.ps1 -Info` shows the app, installation and permissions without the token.
 - The bot can write contents, pull requests and workflows only. Ask me before working around anything outside those permissions.
 - Repos outside SpeakingInBits use my normal Git identity.

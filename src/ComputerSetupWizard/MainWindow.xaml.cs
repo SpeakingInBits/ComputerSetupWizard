@@ -15,7 +15,7 @@ public sealed partial class MainWindow : Window
         ["Tools"] = typeof(ToolsPage),
         ["GitHub"] = typeof(GitHubPage),
         ["BotKey"] = typeof(BotKeyPage),
-        ["Repos"] = typeof(ReposPage),
+        ["BotIdentity"] = typeof(BotIdentityPage),
         ["Claude"] = typeof(ClaudePage),
     };
 
@@ -53,7 +53,7 @@ public sealed partial class MainWindow : Window
 
     int CurrentIndex => Steps.IndexOf((NavigationViewItem)Nav.SelectedItem);
 
-    /// <summary>Opens the step with the given tag, such as "Repos".</summary>
+    /// <summary>Opens the step with the given tag, such as "BotIdentity".</summary>
     public void GoTo(string tag) => Nav.SelectedItem = Steps.First(item => (string)item.Tag == tag);
 
     void Nav_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)

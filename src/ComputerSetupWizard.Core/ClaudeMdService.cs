@@ -16,7 +16,7 @@ public static class ClaudeMdService
         For any repo in the SpeakingInBits GitHub org, make commits and open PRs as the SpeakingInBits-Bot GitHub App, not as my personal account.
 
         - ComputerSetupWizard (`{exePath}`) handles the bot. Never print a bot token or read the private key.
-        - Set up each SpeakingInBits clone for the bot before committing in it: `& "{exePath}" configure-repo <path>`. This sets the bot's commit identity in the repo's local config and makes `git push` there authenticate as the bot.
+        - Every repo with a SpeakingInBits remote already commits as the bot and pushes with bot tokens, through `{BotIdentityService.IncludeFile}`, which the global Git config includes for those repos. Don't set `user.name`, `user.email` or credential helpers in their local config.
         - For `gh`, get a token (valid ~1 hour; get a fresh one if it expires): `$env:GH_TOKEN = & "{exePath}" token`.
         - `& "{exePath}" info` shows the app, installation and permissions without the token.
         - The bot can write contents, pull requests and workflows only. Ask me before working around anything outside those permissions.

@@ -55,6 +55,8 @@ public sealed partial class GitHubPage : Page
             var setup = await GitHubCliService.SetupGitAsync();
             if (!setup.Succeeded)
                 LoginBar.Message = $"gh auth setup-git failed: {setup.AllText}";
+            // gh's helper can land after the bot include, which would make SpeakingInBits pushes use your account
+            await BotIdentityService.KeepLastAsync(AppInstall.Exe);
         }
         finally
         {
@@ -77,6 +79,8 @@ public sealed partial class GitHubPage : Page
         try
         {
             await GitHubCliService.SetGlobalIdentityAsync(name, email);
+            // A new [user] section goes at the end, after the bot include, and would override the bot
+            await BotIdentityService.KeepLastAsync(AppInstall.Exe);
             IdentityStatus.Text = "Saved";
         }
         catch (Exception ex)
