@@ -17,6 +17,7 @@ public static class WingetService
             "Full-featured, free for development and test. Not licensed for production.", SelectedByDefault: true),
         new("BlenderFoundation.Blender", "Blender", "3D modeling and animation.", SelectedByDefault: true),
         new("GodotEngine.GodotEngine.Mono", "Godot Engine (.NET)", "Godot with C# support. Uses the .NET SDK.", SelectedByDefault: true),
+        new("OpenJS.NodeJS.LTS", "Node.js LTS", "JavaScript runtime with npm, for web front ends and JavaScript tools.", SelectedByDefault: false),
         new("Microsoft.PowerShell", "PowerShell 7", "The current cross-platform PowerShell.", SelectedByDefault: false),
         new("Microsoft.VisualStudioCode", "Visual Studio Code", "Code editor.", SelectedByDefault: false),
     ];

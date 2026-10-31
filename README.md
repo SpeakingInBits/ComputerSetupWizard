@@ -8,11 +8,18 @@ It's self-contained (WinUI 3 on .NET 10), so it runs on a fresh machine with not
 
 Download `ComputerSetupWizard-win-x64-Setup.exe` (or `-win-arm64-Setup.exe` for an Arm PC) from the [latest release](https://github.com/SpeakingInBits/ComputerSetupWizard/releases/latest) and run it. It installs for your Windows account (no administrator needed), adds Computer Setup Wizard to the Start menu and desktop, and opens the wizard. Uninstall it from **Settings** > **Apps**. The steps are:
 
-1. **Tools**: installs with winget: Git, the GitHub CLI, Claude Code, the .NET 10 SDK, Visual Studio Community 2026 (with the ASP.NET and web development, and .NET MAUI workloads), SQL Server 2025 Developer, Blender and Godot (.NET), plus optional PowerShell 7 and VS Code. If Visual Studio 2026 is already installed without those workloads, the wizard adds them.
+1. **Tools**: installs with winget: Git, the GitHub CLI, Claude Code, the .NET 10 SDK, Visual Studio Community 2026 (with the ASP.NET and web development, and .NET MAUI workloads), SQL Server 2025 Developer, Blender and Godot (.NET), plus optional Node.js LTS, PowerShell 7 and VS Code. If Visual Studio 2026 is already installed without those workloads, the wizard adds them. If you installed a tool some other way and winget doesn't list it, **Mark as installed** remembers that for this PC.
 2. **GitHub sign-in**: `gh auth login` and your personal global Git identity.
 3. **Bot key**: gets this machine's private key for the bot into `C:\Dev`, or another folder you choose for that machine.
 4. **Bot identity**: adds one setting to your global Git config, so every repo with a SpeakingInBits remote, including clones you make later, commits as the bot and pushes with bot tokens. It can also clean up clones that older versions of the wizard set up one by one.
 5. **Claude Code**: installs the mods from [SpeakingInBits/claude-mods](https://github.com/SpeakingInBits/claude-mods) for your user, so they run in every session, and adds the bot instructions to `~/.claude/CLAUDE.md`. The mod list is read from the marketplace, so new mods show up here without a new wizard. Without the `claude` command line, the mods are turned on in `~/.claude/settings.json` and Claude Code downloads them at the next session start.
+6. **Back up and restore**: saves what winget can't install again to a folder the new PC can reach (OneDrive by default, or a USB drive), and puts it back there:
+   - **Claude Code**: `CLAUDE.md`, `settings.json`, keybindings, agents, commands, skills, output styles, hooks, rules and each project's memory from `~/.claude`. Not your sign-in, chat history or plugin files.
+   - **Cricut Design Space**: `~/.cricut-design-space\LocalData`, with projects saved to this computer, material settings, fonts and images.
+   - **Printers and drivers**: the printers you check, with their drivers, ports and settings, saved by Windows' Printer Migration tool (`PrintBrm`). The file keeps every driver's files, because drivers share them. Restoring asks for administrator approval and keeps printers the PC already has.
+   - **Apps with secrets**: a list you keep of apps with passwords, API keys or `.env` files to move with your password manager. The wizard saves the list, never the secrets.
+
+   Install the apps on the new PC first, then restore. The wizard's own settings (tools marked as installed, the backup folder and the list) are in `%APPDATA%\ComputerSetupWizard\settings.json`.
 
 The Overview page shows what's done, and every step can be run again.
 

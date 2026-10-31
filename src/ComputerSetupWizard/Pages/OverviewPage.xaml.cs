@@ -53,11 +53,12 @@ public sealed partial class OverviewPage : Page
     readonly CheckItem _bot = new("SpeakingInBits repos use the bot", "BotIdentity");
     readonly CheckItem _mods = new("Claude Code mods", "Claude");
     readonly CheckItem _claude = new("Claude Code knows about the bot", "Claude");
+    readonly CheckItem _backup = new("Settings backed up", "Backup");
 
     public OverviewPage()
     {
         InitializeComponent();
-        Checks = [_winget, _git, _gh, _login, _identity, _key, _bot, _mods, _claude];
+        Checks = [_winget, _git, _gh, _login, _identity, _key, _bot, _mods, _claude, _backup];
     }
 
     public ObservableCollection<CheckItem> Checks { get; }
@@ -119,6 +120,13 @@ public sealed partial class OverviewPage : Page
                 ClaudeMdState.Outdated => "CLAUDE.md has an older version of the bot instructions",
                 _ => "Not in CLAUDE.md yet",
             });
+
+            // Optional, so a missing backup is a warning rather than an error
+            var folder = WizardSettings.Load().BackupFolder ?? BackupService.DefaultFolder;
+            var newest = BackupService.Items.Select(item => BackupService.GetInfo(folder, item)).OfType<BackupInfo>().MaxBy(info => info.Time);
+            _backup.Report(newest is not null ? Status.Ok : Status.Warning, newest is not null
+                ? $"Last backed up {newest.Time.ToLocalTime():g} from {newest.Machine}, in {folder}"
+                : $"Nothing in {folder} yet");
         }
         catch (Exception ex)
         {

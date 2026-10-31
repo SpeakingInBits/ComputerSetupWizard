@@ -17,6 +17,7 @@ public sealed partial class MainWindow : Window
         ["BotKey"] = typeof(BotKeyPage),
         ["BotIdentity"] = typeof(BotIdentityPage),
         ["Claude"] = typeof(ClaudePage),
+        ["Backup"] = typeof(BackupPage),
     };
 
     public MainWindow()
