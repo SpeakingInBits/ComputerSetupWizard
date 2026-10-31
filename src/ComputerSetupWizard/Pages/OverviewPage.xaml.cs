@@ -50,14 +50,14 @@ public sealed partial class OverviewPage : Page
     readonly CheckItem _login = new("Signed in to GitHub", "GitHub");
     readonly CheckItem _identity = new("Your Git identity", "GitHub");
     readonly CheckItem _key = new("Bot private key", "BotKey");
-    readonly CheckItem _repos = new("SpeakingInBits repos use the bot", "Repos");
+    readonly CheckItem _bot = new("SpeakingInBits repos use the bot", "BotIdentity");
     readonly CheckItem _mods = new("Claude Code mods", "Claude");
     readonly CheckItem _claude = new("Claude Code knows about the bot", "Claude");
 
     public OverviewPage()
     {
         InitializeComponent();
-        Checks = [_winget, _git, _gh, _login, _identity, _key, _repos, _mods, _claude];
+        Checks = [_winget, _git, _gh, _login, _identity, _key, _bot, _mods, _claude];
     }
 
     public ObservableCollection<CheckItem> Checks { get; }
@@ -95,15 +95,17 @@ public sealed partial class OverviewPage : Page
 
             if (GitHubCliService.IsGitInstalled)
             {
-                var repos = await RepoService.ScanAsync(RepoService.DefaultScanRoots(), AppInstall.Exe);
-                var ready = repos.Count(r => r.State == RepoState.Bot);
-                _repos.Report(
-                    repos.Count == 0 ? Status.Warning : ready == repos.Count ? Status.Ok : Status.Error,
-                    repos.Count == 0 ? "No SpeakingInBits clones found in the usual folders" : $"{ready} of {repos.Count} set up");
+                var bot = await BotIdentityService.GetStateAsync(AppInstall.Exe);
+                _bot.Report(bot == BotIdentityState.Current ? Status.Ok : Status.Error, bot switch
+                {
+                    BotIdentityState.Current => BotIdentityService.IncludeFile,
+                    BotIdentityState.Outdated => "The global Git config has an older or overridden bot setup",
+                    _ => "Not in the global Git config yet",
+                });
             }
             else
             {
-                _repos.Report(Status.Error, "Needs Git");
+                _bot.Report(Status.Error, "Needs Git");
             }
 
             var mods = await ClaudeModsService.GetModsAsync();

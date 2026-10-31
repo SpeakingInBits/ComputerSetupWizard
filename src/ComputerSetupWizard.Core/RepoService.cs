@@ -2,21 +2,10 @@ using System.Text.RegularExpressions;
 
 namespace ComputerSetupWizard.Core;
 
-public enum RepoState
-{
-    /// <summary>Uses the personal identity and credentials.</summary>
-    Personal,
-
-    /// <summary>Commits as the bot and pushes with bot tokens from the wizard.</summary>
-    Bot,
-
-    /// <summary>Has some bot settings but not all, or points at a wizard exe that moved.</summary>
-    Partial,
-}
-
-public sealed record RepoInfo(string Path, string RemoteUrl, RepoState State);
-
-/// <summary>Finds SpeakingInBits repos on the machine and switches them between the personal and bot identities.</summary>
+/// <summary>
+/// Finds SpeakingInBits clones that older versions of the wizard set up one by one, with the bot's
+/// settings in their local config, and removes those settings so the global setup applies to them.
+/// </summary>
 public static partial class RepoService
 {
     const string HelperKey = "credential.https://github.com.helper";
@@ -38,12 +27,6 @@ public static partial class RepoService
         ];
         return candidates.Where(Directory.Exists).ToList();
     }
-
-    /// <summary>
-    /// The git credential helper entry that makes the wizard at <paramref name="exePath"/> answer for github.com.
-    /// Git runs it through sh, so the path is single-quoted like gh's own entry.
-    /// </summary>
-    public static string HelperCommand(string exePath) => $"!'{exePath}' git-credential";
 
     public static bool IsOrgRemote(string url) => OrgRemotePattern().IsMatch(url);
 
@@ -87,69 +70,56 @@ public static partial class RepoService
         }
     }
 
-    /// <summary>The SpeakingInBits repos under <paramref name="roots"/> and how each is set up.</summary>
-    public static async Task<IReadOnlyList<RepoInfo>> ScanAsync(IEnumerable<string> roots, string exePath, CancellationToken ct = default)
+    /// <summary>The SpeakingInBits repos under <paramref name="roots"/> that still have bot settings in their local config.</summary>
+    public static async Task<IReadOnlyList<string>> FindLocalSetupsAsync(IEnumerable<string> roots, CancellationToken ct = default)
     {
-        var repos = new List<RepoInfo>();
+        var repos = new List<string>();
         foreach (var path in FindRepositories(roots))
         {
             ct.ThrowIfCancellationRequested();
-            var info = await GetInfoAsync(path, exePath, ct);
-            if (info is not null)
-                repos.Add(info);
+            if (await HasOrgRemoteAsync(path, ct) && (await GetLocalSettingsAsync(path, ct)).Any)
+                repos.Add(path);
         }
-        return repos.OrderBy(r => r.Path, StringComparer.OrdinalIgnoreCase).ToList();
+        return repos.Order(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    /// <summary>How <paramref name="path"/> is set up, or null if it has no SpeakingInBits remote.</summary>
-    public static async Task<RepoInfo?> GetInfoAsync(string path, string exePath, CancellationToken ct = default)
+    static async Task<bool> HasOrgRemoteAsync(string path, CancellationToken ct)
     {
         var remotes = await ProcessRunner.RunAsync(
             "git", ["-C", path, "config", "--get-regexp", @"^remote\..*\.url$"], ct: ct);
-        var orgUrl = remotes.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Select(line => line.Split(' ', 2) is [_, var url] ? url : "")
-            .FirstOrDefault(IsOrgRemote);
-        if (orgUrl is null)
-            return null;
-
-        var name = await GitConfig.GetAsync(path, ["--local", "user.name"], ct);
-        var email = await GitConfig.GetAsync(path, ["--local", "user.email"], ct);
-        var helpers = await GitConfig.GetAllAsync(path, ["--local", HelperKey], ct);
-        return new RepoInfo(path, orgUrl, GetState(name, email, helpers, exePath));
+        return remotes.Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Any(line => line.Split(' ', 2) is [_, var url] && IsOrgRemote(url));
     }
 
-    internal static RepoState GetState(string? name, string? email, string[] helpers, string exePath)
+    internal sealed record LocalSettings(bool Name, bool Email, bool Helper)
     {
-        var identity = name == BotConfig.CommitName && email == BotConfig.CommitEmail;
-        var credentials = helpers.Length == 2 && helpers[0] == ""
-            && string.Equals(helpers[1], HelperCommand(exePath), StringComparison.OrdinalIgnoreCase);
-
-        if (identity && credentials)
-            return RepoState.Bot;
-        if (name == BotConfig.CommitName || email == BotConfig.CommitEmail || helpers.Any(h => h.EndsWith(" git-credential")))
-            return RepoState.Partial;
-        return RepoState.Personal;
+        public bool Any => Name || Email || Helper;
     }
+
+    internal static LocalSettings GetLocalSettings(string? name, string? email, string[] helpers) =>
+        new(name == BotConfig.CommitName,
+            email == BotConfig.CommitEmail,
+            helpers.Any(h => h.EndsWith("ComputerSetupWizard.exe' git-credential", StringComparison.OrdinalIgnoreCase)));
+
+    static async Task<LocalSettings> GetLocalSettingsAsync(string path, CancellationToken ct) =>
+        GetLocalSettings(
+            await GitConfig.GetAsync(path, ["--local", "user.name"], ct),
+            await GitConfig.GetAsync(path, ["--local", "user.email"], ct),
+            await GitConfig.GetAllAsync(path, ["--local", HelperKey], ct));
 
     /// <summary>
-    /// Sets the bot's commit identity in the repo's local config, and replaces the global github.com
-    /// credential helpers (an empty entry resets the list) with the wizard, so pushes get bot tokens.
+    /// Removes the bot settings an older wizard put in the repo's local config. Anything else set
+    /// there, such as a different local identity, stays.
     /// </summary>
-    public static async Task ConfigureForBotAsync(string path, string exePath, CancellationToken ct = default)
+    public static async Task RemoveLocalSetupAsync(string path, CancellationToken ct = default)
     {
-        await GitConfig.SetAsync(path, ["--local", "user.name", BotConfig.CommitName], ct);
-        await GitConfig.SetAsync(path, ["--local", "user.email", BotConfig.CommitEmail], ct);
-        await GitConfig.UnsetAllAsync(path, "--local", HelperKey, ct);
-        await GitConfig.SetAsync(path, ["--local", "--add", HelperKey, ""], ct);
-        await GitConfig.SetAsync(path, ["--local", "--add", HelperKey, HelperCommand(exePath)], ct);
-    }
-
-    /// <summary>Removes the bot settings, so the repo goes back to the global personal identity.</summary>
-    public static async Task ResetToPersonalAsync(string path, CancellationToken ct = default)
-    {
-        await GitConfig.UnsetAllAsync(path, "--local", "user.name", ct);
-        await GitConfig.UnsetAllAsync(path, "--local", "user.email", ct);
-        await GitConfig.UnsetAllAsync(path, "--local", HelperKey, ct);
+        var settings = await GetLocalSettingsAsync(path, ct);
+        if (settings.Name)
+            await GitConfig.UnsetAllAsync(path, "--local", "user.name", ct);
+        if (settings.Email)
+            await GitConfig.UnsetAllAsync(path, "--local", "user.email", ct);
+        if (settings.Helper)
+            await GitConfig.UnsetAllAsync(path, "--local", HelperKey, ct);
     }
 
     [GeneratedRegex(@"github\.com[:/]" + BotConfig.Org + "/", RegexOptions.IgnoreCase)]
