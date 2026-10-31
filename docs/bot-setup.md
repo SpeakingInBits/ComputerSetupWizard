@@ -57,11 +57,19 @@ Give each machine its own key, so you can revoke one machine without breaking th
 
 1. Open the [app settings](https://github.com/organizations/SpeakingInBits/settings/apps/speakinginbits-bot) and click **Generate a private key**.
 2. Save the downloaded `.pem` file to `C:\Dev`. Keep the name GitHub gives it (`speakinginbits-bot.<date>.private-key.pem`).
+
+   To keep it somewhere else on this machine, save it there and point the `SPEAKINGINBITS_BOT_KEY` user environment variable at that folder. The wizard and `Get-BotToken.ps1` look there instead of `C:\Dev`:
+
+   ```powershell
+   [Environment]::SetEnvironmentVariable('SPEAKINGINBITS_BOT_KEY', 'D:\Keys', 'User')
+   ```
+
+   Open a new terminal afterwards so it sees the variable.
 3. Never commit the key or copy it into a repo. When a machine is retired, delete its key on the app settings page.
 
 ## 4. Install the token script
 
-Copy [`scripts/Get-BotToken.ps1`](../scripts/Get-BotToken.ps1) to `C:\Dev\Get-BotToken.ps1`. It signs a short-lived request with the newest bot key in `C:\Dev` and exchanges it for an installation token that lasts one hour. Use `-KeyPath` if the key is somewhere else.
+Copy [`scripts/Get-BotToken.ps1`](../scripts/Get-BotToken.ps1) to `C:\Dev\Get-BotToken.ps1`. It signs a short-lived request with the newest bot key in `C:\Dev` (or the `SPEAKINGINBITS_BOT_KEY` folder) and exchanges it for an installation token that lasts one hour. Use `-KeyPath` if the key is somewhere else.
 
 If PowerShell refuses to run scripts, allow local scripts for your user:
 

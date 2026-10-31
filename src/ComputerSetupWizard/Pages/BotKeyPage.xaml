@@ -9,11 +9,25 @@
             <TextBlock Style="{StaticResource PageTitleStyle}" Text="Bot private key" />
             <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
                 Each machine gets its own private key for the SpeakingInBits-Bot app, so one machine can be
-                revoked without breaking the others. The key lives in C:\Dev and never goes in a repo. When a
-                machine is retired, delete its key on the app settings page.
+                revoked without breaking the others. The key never goes in a repo. When a machine is retired,
+                delete its key on the app settings page.
             </TextBlock>
 
             <InfoBar x:Name="KeyBar" IsClosable="False" IsOpen="True" />
+
+            <TextBlock Style="{StaticResource SectionTitleStyle}" Text="Key folder" />
+            <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
+                The key lives in C:\Dev unless you choose another folder for this machine. The wizard saves the
+                choice in your SPEAKINGINBITS_BOT_KEY environment variable, where git, Claude and the bot scripts
+                find it too. A key already in the old folder moves with it.
+            </TextBlock>
+            <StackPanel Orientation="Horizontal" Spacing="12">
+                <Button
+                    x:Name="FolderButton"
+                    Click="ChooseFolder_Click"
+                    Content="Choose folder" />
+                <TextBlock x:Name="FolderStatus" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </StackPanel>
 
             <TextBlock Style="{StaticResource SectionTitleStyle}" Text="Get a key for this machine" />
             <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
@@ -21,7 +35,7 @@
             </TextBlock>
             <Button Click="OpenSettings_Click" Content="Open app settings" />
             <TextBlock Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap">
-                2. Move the key from your Downloads folder to C:\Dev. If it isn't in Downloads, you can pick it.
+                2. Move the key from your Downloads folder to the key folder. If it isn't in Downloads, you can pick it.
             </TextBlock>
             <StackPanel Orientation="Horizontal" Spacing="12">
                 <Button

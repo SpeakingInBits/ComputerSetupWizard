@@ -10,7 +10,7 @@ Download `ComputerSetupWizard-win-x64-Setup.exe` (or `-win-arm64-Setup.exe` for 
 
 1. **Tools**: installs with winget: Git, the GitHub CLI, Claude Code, the .NET 10 SDK, Visual Studio Community 2026 (with the ASP.NET and web development, and .NET MAUI workloads), SQL Server 2025 Developer, Blender and Godot (.NET), plus optional PowerShell 7 and VS Code. If Visual Studio 2026 is already installed without those workloads, the wizard adds them.
 2. **GitHub sign-in**: `gh auth login` and your personal global Git identity.
-3. **Bot key**: gets this machine's private key for the bot into `C:\Dev`.
+3. **Bot key**: gets this machine's private key for the bot into `C:\Dev`, or another folder you choose for that machine.
 4. **Bot repos**: finds SpeakingInBits clones and sets them up for the bot.
 5. **Claude Code**: installs the mods from [SpeakingInBits/claude-mods](https://github.com/SpeakingInBits/claude-mods) for your user, so they run in every session, and adds the bot instructions to `~/.claude/CLAUDE.md`. The mod list is read from the marketplace, so new mods show up here without a new wizard. Without the `claude` command line, the mods are turned on in `~/.claude/settings.json` and Claude Code downloads them at the next session start.
 

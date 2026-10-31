@@ -18,12 +18,13 @@ $ErrorActionPreference = 'Stop'
 $openssl = 'C:\Program Files\Git\usr\bin\openssl.exe'
 if (-not (Test-Path $openssl)) { throw "OpenSSL not found at $openssl (comes with Git for Windows)." }
 
-# Default to the newest bot key in C:\Dev
+# Default to the newest bot key in this machine's key folder: SPEAKINGINBITS_BOT_KEY, or C:\Dev
+$keyDir = if ($env:SPEAKINGINBITS_BOT_KEY) { $env:SPEAKINGINBITS_BOT_KEY } else { 'C:\Dev' }
 if (-not $KeyPath) {
-    $KeyPath = Get-ChildItem 'C:\Dev' -Filter 'speakinginbits-bot.*.private-key.pem' -File -ErrorAction SilentlyContinue |
+    $KeyPath = Get-ChildItem $keyDir -Filter 'speakinginbits-bot.*.private-key.pem' -File -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending | Select-Object -First 1 -ExpandProperty FullName
 }
-if (-not $KeyPath -or -not (Test-Path $KeyPath)) { throw 'Private key not found. Save it in C:\Dev or pass -KeyPath.' }
+if (-not $KeyPath -or -not (Test-Path $KeyPath)) { throw "Private key not found. Save it in $keyDir or pass -KeyPath." }
 
 function ConvertTo-Base64Url([byte[]]$bytes) {
     [Convert]::ToBase64String($bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_')

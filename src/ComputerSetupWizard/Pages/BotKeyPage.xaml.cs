@@ -28,6 +28,34 @@ public sealed partial class BotKeyPage : Page
         CheckButton.IsEnabled = key is not null;
     }
 
+    async void ChooseFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var picker = new FolderPicker();
+        picker.FileTypeFilter.Add("*");
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, WinRT.Interop.WindowNative.GetWindowHandle(App.MainWindow));
+        if (await picker.PickSingleFolderAsync() is not { } folder)
+            return;
+
+        FolderButton.IsEnabled = false;
+        try
+        {
+            var key = BotConfig.FindNewestKey();
+            var moved = key is not null && BotConfig.FindNewestKey(folder.Path) is null ? MoveKey(key, folder.Path) : null;
+            // Saving a user variable notifies every open window, which can take a moment
+            await Task.Run(() => BotConfig.SetKeyDirectory(folder.Path));
+            FolderStatus.Text = moved is not null ? $"Moved the key to {moved}" : $"Using {folder.Path}";
+        }
+        catch (Exception ex)
+        {
+            FolderStatus.Text = ex.Message;
+        }
+        finally
+        {
+            FolderButton.IsEnabled = true;
+        }
+        ShowKey();
+    }
+
     async void OpenSettings_Click(object sender, RoutedEventArgs e) =>
         await Windows.System.Launcher.LaunchUriAsync(new Uri(BotConfig.AppSettingsUrl));
 
@@ -67,12 +95,17 @@ public sealed partial class BotKeyPage : Page
             }
         }
 
+        return MoveKey(source, BotConfig.KeyDirectory);
+    }
+
+    static string MoveKey(string source, string directory)
+    {
         var name = Path.GetFileName(source);
         if (!FileSystemName.MatchesSimpleExpression(BotConfig.KeyPattern, name))
             name = $"speakinginbits-bot.{DateTime.Now:yyyy-MM-dd}.private-key.pem";
 
-        Directory.CreateDirectory(BotConfig.KeyDirectory);
-        var destination = Path.Combine(BotConfig.KeyDirectory, name);
+        Directory.CreateDirectory(directory);
+        var destination = Path.Combine(directory, name);
         if (File.Exists(destination))
             throw new IOException($"{destination} already exists.");
 

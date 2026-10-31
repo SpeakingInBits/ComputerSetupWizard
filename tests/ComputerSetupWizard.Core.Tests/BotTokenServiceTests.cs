@@ -60,4 +60,12 @@ public class BotTokenServiceTests
     [Fact]
     public void FindNewestKey_ReturnsNullWithoutAKey() =>
         Assert.Null(BotConfig.FindNewestKey(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString())));
+
+    [Theory]
+    [InlineData(null, null, @"C:\Dev")]
+    [InlineData("", " ", @"C:\Dev")]
+    [InlineData(null, @"D:\Keys", @"D:\Keys")]
+    [InlineData(@"E:\Bot ", @"D:\Keys", @"E:\Bot")] // a variable set in this process wins over the saved one
+    public void ResolveKeyDirectory(string? process, string? user, string expected) =>
+        Assert.Equal(expected, BotConfig.ResolveKeyDirectory(process, user));
 }
