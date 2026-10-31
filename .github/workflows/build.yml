@@ -51,7 +51,7 @@ jobs:
           # the whole app, which keeps the release simple.
           vpk pack --packId ComputerSetupWizard --packTitle "Computer Setup Wizard" --packAuthors SpeakingInBits `
             --packVersion $version --channel ${{ matrix.rid }} --runtime ${{ matrix.rid }} --delta None --noPortable `
-            --packDir out --mainExe ComputerSetupWizard.exe --outputDir dist
+            --packDir out --mainExe ComputerSetupWizard.exe --icon src/ComputerSetupWizard/Assets/app.ico --outputDir dist
 
       # ComputerSetupWizard-<rid>-Setup.exe, plus the package and release list (releases.<rid>.json) installed copies update from
       - uses: actions/upload-artifact@v7

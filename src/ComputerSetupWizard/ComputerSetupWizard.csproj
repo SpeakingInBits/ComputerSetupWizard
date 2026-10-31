@@ -10,6 +10,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- The exe's icon, which the taskbar uses too. app.svg is its source. -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>true</EnableMsixTooling>
 
@@ -38,6 +40,11 @@
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2705" />
     <!-- Installs and updates the wizard from the GitHub releases. Keep in step with vpk in .github/workflows/build.yml. -->
     <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- MainWindow loads these from the app folder for the window and title bar icons -->
+    <Content Include="Assets\app.ico;Assets\app.svg" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
