@@ -1,6 +1,9 @@
 using System.Globalization;
 using System.IO.Enumeration;
+using System.Text;
 using System.Text.Json;
+using System.Xml;
+using System.Xml.Linq;
 
 namespace ComputerSetupWizard.Core;
 
@@ -91,9 +94,9 @@ public sealed class FolderBackupItem(string name, string description, string fol
 /// <summary>Printers with their drivers and ports, saved by the Printer Migration tool (PrintBrm).</summary>
 public sealed class PrintersBackupItem() : BackupItem(
     "Printers and drivers",
-    "Every printer with its driver, port and settings, saved by Windows' Printer Migration tool. " +
-    "The file includes Windows' own drivers too, so it's a few hundred MB. Restoring asks for administrator approval " +
-    "and keeps printers the new PC already has.",
+    "The printers you choose, with their drivers, ports and settings, saved by Windows' Printer Migration tool. " +
+    "The file holds the files of every printer driver on this PC, so it's a few hundred MB. Restoring asks for " +
+    "administrator approval and keeps printers the new PC already has.",
     "Printers")
 {
     const string ExportFile = "printers.printerExport";
@@ -104,12 +107,108 @@ public sealed class PrintersBackupItem() : BackupItem(
 
     public override bool IsOnThisPc => File.Exists(PrintBrm);
 
+    /// <summary>The printers to back up, or null for all of them.</summary>
+    public IReadOnlyCollection<string>? Printers { get; set; }
+
+    /// <summary>The printers the Printer Migration tool would back up.</summary>
+    public static async Task<IReadOnlyList<string>> GetPrintersAsync(CancellationToken ct = default)
+    {
+        var result = await ProcessRunner.RunAsync(PrintBrm, ["-Q"], ct: ct);
+        if (!result.Succeeded)
+            throw new InvalidOperationException($"The Printer Migration tool couldn't list the printers (exit code {result.ExitCode}).");
+        return ParsePrinters(result.Output);
+    }
+
+    /// <summary>The names under LISTING PRINT QUEUES in the output of <c>PrintBrm -Q</c>.</summary>
+    internal static IReadOnlyList<string> ParsePrinters(string output) =>
+        output.ReplaceLineEndings("\n").Split('\n')
+            .SkipWhile(line => line.Trim() != "LISTING PRINT QUEUES")
+            .Skip(1)
+            .TakeWhile(line => !line.StartsWith("LISTING ", StringComparison.Ordinal))
+            .Where(line => line.Trim().Length > 0)
+            .Select(line => line.Trim())
+            .ToList();
+
     // Saving doesn't need administrator rights
     public override async Task BackupAsync(string folder, Action<string> log, CancellationToken ct)
     {
-        var result = await ProcessRunner.RunAsync(PrintBrm, ["-B", "-F", Path.Combine(folder, ExportFile)], onOutput: log, ct: ct);
+        var destination = Path.Combine(folder, ExportFile);
+        if (Printers is null)
+        {
+            await RunPrintBrmAsync(["-B", "-F", destination], log, ct);
+            return;
+        }
+        if (Printers.Count == 0)
+            throw new InvalidOperationException("Choose at least one printer to back up.");
+
+        // The tool backs up every printer, so back them all up, unpack, drop the others and pack it again
+        var temp = Path.Combine(Path.GetTempPath(), $"ComputerSetupWizard-printers-{Guid.NewGuid():N}");
+        try
+        {
+            Directory.CreateDirectory(temp);
+            var all = Path.Combine(temp, ExportFile);
+            var unpacked = Path.Combine(temp, "unpacked");
+            await RunPrintBrmAsync(["-B", "-F", all], log, ct);
+            log("Removing the printers you didn't choose…");
+            // With -D, -R only unpacks the file; it doesn't restore anything
+            await RunPrintBrmAsync(["-R", "-F", all, "-D", unpacked], _ => { }, ct);
+            KeepOnly(unpacked, Printers);
+            await RunPrintBrmAsync(["-B", "-D", unpacked, "-F", destination], _ => { }, ct);
+            log($"Saved {string.Join(", ", Printers)}.");
+        }
+        finally
+        {
+            if (Directory.Exists(temp))
+                Directory.Delete(temp, recursive: true);
+        }
+    }
+
+    static async Task RunPrintBrmAsync(string[] arguments, Action<string> log, CancellationToken ct)
+    {
+        var result = await ProcessRunner.RunAsync(PrintBrm, arguments, onOutput: log, ct: ct);
         if (!result.Succeeded)
             throw new InvalidOperationException($"The Printer Migration tool failed (exit code {result.ExitCode}).");
+    }
+
+    /// <summary>
+    /// Removes the other printers from an unpacked backup, and the drivers only they use, so a restore doesn't install
+    /// them. The driver files stay, because drivers share them.
+    /// </summary>
+    internal static void KeepOnly(string unpacked, IReadOnlyCollection<string> printers)
+    {
+        var printersFile = Path.Combine(unpacked, "BrmPrinters.xml");
+        var queues = XDocument.Load(printersFile);
+        var drivers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var queue in queues.Root!.Elements("PRINTQUEUE").ToList())
+        {
+            var queueFile = Path.Combine(unpacked, "Printers", (string?)queue.Attribute("FileName") ?? "");
+            if (printers.Contains((string?)queue.Attribute("PrinterName") ?? "", StringComparer.OrdinalIgnoreCase))
+            {
+                if (File.Exists(queueFile) && (string?)XDocument.Load(queueFile).Root!.Attribute("DriverName") is { } driver)
+                    drivers.Add(driver);
+            }
+            else
+            {
+                queue.Remove();
+                File.Delete(queueFile);
+            }
+        }
+        Save(queues, printersFile);
+
+        var driversFile = Path.Combine(unpacked, "BrmDrivers.xml");
+        var driverList = XDocument.Load(driversFile);
+        // Entries without a name aren't drivers, so they stay
+        driverList.Root!.Elements("DRIVER")
+            .Where(entry => (string?)entry.Attribute("DriverName") is { } name && !drivers.Contains(name))
+            .Remove();
+        Save(driverList, driversFile);
+    }
+
+    // Like the tool's own files: no XML declaration or byte order mark
+    static void Save(XDocument document, string path)
+    {
+        using var writer = XmlWriter.Create(path, new XmlWriterSettings { OmitXmlDeclaration = true, Encoding = new UTF8Encoding(false) });
+        document.Save(writer);
     }
 
     // Installing drivers does, and an elevated process can't hand its output back, so it goes through a log file

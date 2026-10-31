@@ -108,4 +108,33 @@ public sealed class BackupServiceTests : IDisposable
 
     [Fact]
     public void LoadSecretApps_IsEmptyWithoutABackup() => Assert.Empty(BackupService.LoadSecretApps(Backups));
+
+    [Fact]
+    public void ParsePrinters_ReadsThePrintQueues()
+    {
+        var output = string.Join("\r\n",
+            "Operation mode: query", "", "LISTING PRINT QUEUES", "PM-241-BT", "EPSON5B1EAF (ET-8550 Series)",
+            "LISTING PRINTER DRIVERS", "PM-241-BT, Windows x64, QY Monitor", "LISTING PRINTER PORTS");
+
+        Assert.Equal(["PM-241-BT", "EPSON5B1EAF (ET-8550 Series)"], PrintersBackupItem.ParsePrinters(output));
+    }
+
+    [Fact]
+    public void KeepOnly_RemovesOtherPrintersAndTheirDrivers()
+    {
+        WriteFile(Source, "BrmPrinters.xml",
+            """<PRINTERS><PRINTQUEUE PrinterName="Label" FileName="a.xml"/><PRINTQUEUE PrinterName="Photo" FileName="b.xml"/></PRINTERS>""");
+        WriteFile(Source, @"Printers\a.xml", """<PRINTQUEUE PrinterName="Label" DriverName="Label Driver"/>""");
+        WriteFile(Source, @"Printers\b.xml", """<PRINTQUEUE PrinterName="Photo" DriverName="Photo Driver"/>""");
+        WriteFile(Source, "BrmDrivers.xml",
+            """<PRINTERDRIVERS><DRIVER DriverName="Label Driver"/><DRIVER DriverName="Photo Driver"/><DRIVER Environment="Windows x64"/></PRINTERDRIVERS>""");
+
+        PrintersBackupItem.KeepOnly(Source, ["label"]);
+
+        Assert.Equal("""<PRINTERS><PRINTQUEUE PrinterName="Label" FileName="a.xml" /></PRINTERS>""",
+            File.ReadAllText(Path.Combine(Source, "BrmPrinters.xml")));
+        Assert.False(File.Exists(Path.Combine(Source, "Printers", "b.xml")));
+        Assert.Equal("""<PRINTERDRIVERS><DRIVER DriverName="Label Driver" /><DRIVER Environment="Windows x64" /></PRINTERDRIVERS>""",
+            File.ReadAllText(Path.Combine(Source, "BrmDrivers.xml")));
+    }
 }

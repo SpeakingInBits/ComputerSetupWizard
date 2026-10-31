@@ -7,8 +7,18 @@ using Windows.Storage.Pickers;
 
 namespace ComputerSetupWizard.Pages;
 
+public sealed class PrinterChoice(string name, bool isSelected) : Observable
+{
+    bool _isSelected = isSelected;
+
+    public string Name { get; } = name;
+
+    public bool IsSelected { get => _isSelected; set => Set(ref _isSelected, value); }
+}
+
 public sealed class BackupRow(BackupItem item) : Observable
 {
+    bool _hasPrinters;
     bool _isSelected;
     bool _isBusy;
     string _statusText = "";
@@ -25,6 +35,11 @@ public sealed class BackupRow(BackupItem item) : Observable
     public string StatusText { get => _statusText; set => Set(ref _statusText, value); }
 
     public string Detail { get => _detail; private set => Set(ref _detail, value); }
+
+    /// <summary>For the printers item, which printers to back up.</summary>
+    public ObservableCollection<PrinterChoice> Printers { get; } = [];
+
+    public bool HasPrinters { get => _hasPrinters; set => Set(ref _hasPrinters, value); }
 
     bool _refreshed;
 
@@ -46,11 +61,13 @@ public sealed class BackupRow(BackupItem item) : Observable
 public sealed partial class BackupPage : Page
 {
     readonly WizardSettings _settings = WizardSettings.Load();
+    readonly BackupRow _printersRow;
 
     public BackupPage()
     {
         InitializeComponent();
         Items = new(BackupService.Items.Select(item => new BackupRow(item)));
+        _printersRow = Items.First(row => row.Item is PrintersBackupItem);
         SecretApps = new(_settings.SecretApps);
     }
 
@@ -60,7 +77,44 @@ public sealed partial class BackupPage : Page
 
     string Folder => _settings.BackupFolder ?? BackupService.DefaultFolder;
 
-    protected override void OnNavigatedTo(NavigationEventArgs e) => ShowFolder();
+    protected override async void OnNavigatedTo(NavigationEventArgs e)
+    {
+        ShowFolder();
+        await LoadPrintersAsync();
+    }
+
+    /// <summary>Lists this PC's printers to choose from. Ones unchecked before stay unchecked.</summary>
+    async Task LoadPrintersAsync()
+    {
+        if (!_printersRow.Item.IsOnThisPc)
+            return;
+        try
+        {
+            foreach (var name in await PrintersBackupItem.GetPrintersAsync())
+            {
+                var choice = new PrinterChoice(name, !_settings.SkippedPrinters.Contains(name, StringComparer.OrdinalIgnoreCase));
+                choice.PropertyChanged += (_, _) => SaveSkippedPrinters();
+                _printersRow.Printers.Add(choice);
+            }
+            _printersRow.HasPrinters = _printersRow.Printers.Count > 0;
+        }
+        catch (Exception ex)
+        {
+            Log.Append($"Couldn't list the printers, so a backup saves all of them: {ex.Message}");
+        }
+    }
+
+    void SaveSkippedPrinters()
+    {
+        var listed = _printersRow.Printers.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        // Keep printers skipped before that aren't installed right now
+        _settings.SkippedPrinters =
+        [
+            .. _settings.SkippedPrinters.Where(name => !listed.Contains(name)),
+            .. _printersRow.Printers.Where(p => !p.IsSelected).Select(p => p.Name),
+        ];
+        SaveSettings();
+    }
 
     void ShowFolder()
     {
@@ -85,6 +139,10 @@ public sealed partial class BackupPage : Page
     async void Backup_Click(object sender, RoutedEventArgs e)
     {
         var selected = Items.Where(row => row.IsSelected).ToList();
+        var printers = _printersRow.Printers;
+        ((PrintersBackupItem)_printersRow.Item).Printers = printers.All(p => p.IsSelected)
+            ? null
+            : printers.Where(p => p.IsSelected).Select(p => p.Name).ToList();
         SetButtonsEnabled(false);
         try
         {

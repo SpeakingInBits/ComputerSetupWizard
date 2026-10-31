@@ -36,6 +36,10 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
                             <CheckBox IsChecked="{x:Bind IsSelected, Mode=TwoWay}">
                                 <StackPanel>
                                     <TextBlock Style="{StaticResource BodyStrongTextBlockStyle}" Text="{x:Bind Item.Name}" />
@@ -62,6 +66,18 @@
                                     IsActive="{x:Bind IsBusy, Mode=OneWay}" />
                                 <TextBlock Text="{x:Bind StatusText, Mode=OneWay}" />
                             </StackPanel>
+                            <ItemsControl
+                                Grid.Row="1"
+                                Margin="28,4,0,0"
+                                IsEnabled="{x:Bind IsSelected, Mode=OneWay}"
+                                ItemsSource="{x:Bind Printers}"
+                                Visibility="{x:Bind HasPrinters, Mode=OneWay}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="local:PrinterChoice">
+                                        <CheckBox Content="{x:Bind Name}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Grid>
                     </DataTemplate>
                 </ListView.ItemTemplate>

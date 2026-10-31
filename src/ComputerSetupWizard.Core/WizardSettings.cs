@@ -26,6 +26,9 @@ public sealed class WizardSettings
 
     public List<SecretApp> SecretApps { get; set; } = [];
 
+    /// <summary>Printers the user unchecked for backup. Printers added later are backed up until unchecked.</summary>
+    public List<string> SkippedPrinters { get; set; } = [];
+
     public static WizardSettings Load() => Load(DefaultPath);
 
     /// <summary>The saved settings, or defaults if there are none or the file can't be read.</summary>

@@ -16,7 +16,7 @@ Download `ComputerSetupWizard-win-x64-Setup.exe` (or `-win-arm64-Setup.exe` for 
 6. **Back up and restore**: saves what winget can't install again to a folder the new PC can reach (OneDrive by default, or a USB drive), and puts it back there:
    - **Claude Code**: `CLAUDE.md`, `settings.json`, keybindings, agents, commands, skills, output styles, hooks, rules and each project's memory from `~/.claude`. Not your sign-in, chat history or plugin files.
    - **Cricut Design Space**: `~/.cricut-design-space\LocalData`, with projects saved to this computer, material settings, fonts and images.
-   - **Printers and drivers**: Windows' Printer Migration tool (`PrintBrm`). Restoring asks for administrator approval and keeps printers the PC already has.
+   - **Printers and drivers**: the printers you check, with their drivers, ports and settings, saved by Windows' Printer Migration tool (`PrintBrm`). The file keeps every driver's files, because drivers share them. Restoring asks for administrator approval and keeps printers the PC already has.
    - **Apps with secrets**: a list you keep of apps with passwords, API keys or `.env` files to move with your password manager. The wizard saves the list, never the secrets.
 
    Install the apps on the new PC first, then restore. The wizard's own settings (tools marked as installed, the backup folder and the list) are in `%APPDATA%\ComputerSetupWizard\settings.json`.
