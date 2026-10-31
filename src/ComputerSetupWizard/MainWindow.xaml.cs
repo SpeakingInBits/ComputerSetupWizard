@@ -2,6 +2,7 @@ using ComputerSetupWizard.Pages;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
+using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics;
 
 namespace ComputerSetupWizard;
@@ -23,6 +24,11 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
+
+        // The title bar is the app's own, so it shows the icon itself; SetIcon covers the taskbar and Alt+Tab
+        var assets = Path.Combine(AppContext.BaseDirectory, "Assets");
+        AppWindow.SetIcon(Path.Combine(assets, "app.ico"));
+        TitleBarIcon.Source = new SvgImageSource(new Uri(Path.Combine(assets, "app.svg")));
 
         // AppWindow sizes are in physical pixels; XamlRoot's scale isn't reliable until the window shows
         var scale = GetDpiForWindow(WinRT.Interop.WindowNative.GetWindowHandle(this)) / 96.0;
